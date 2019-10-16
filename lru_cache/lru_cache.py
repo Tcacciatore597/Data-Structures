@@ -11,10 +11,10 @@ class LRUCache:
     to every node stored in the cache.
     """
     def __init__(self, limit=10):
-        self.hash = {}
+        self.storage = dict()
         self.size = 0
         self.limit = limit
-        self.linked_list = DoublyLinkedList()
+        self.order = DoublyLinkedList()
 
     """
     Retrieves the value associated with the given key. Also
@@ -24,11 +24,13 @@ class LRUCache:
     key-value pair doesn't exist in the cache.
     """
     def get(self, key):
-        if key not in self.hash:
+        if key in self.storage:
+            node = self.storage[key]
+            self.order.move_to_end(node)
+            return node.value[1]
+        else:
             return None
-        
-        self.linked_list.move_to_front(self.hash[key])
-        return self.hash[key]
+            
     """
     Adds the given key-value pair to the cache. The newly-
     added pair should be considered the most-recently used
@@ -40,20 +42,17 @@ class LRUCache:
     the newly-specified value.
     """
     def set(self, key, value):
-        pair = {key : value}
-        if key in self.hash:
-           self.hash[key] = value
-           self.linked_list.move_to_front(self.hash[key])
-        else:
-            if self.linked_list.length >= self.limit:
-                #remove tail
-                self.linked_list.remove_from_tail()
-                #remove from hash
-                self.hash.pop(key)
-                #add new to head
-                self.linked_list.add_to_head(value)
-                #save to cache
-                self.hash.update(pair)
-            else:
-                self.linked_list.add_to_head(value)
-                self.hash.update(pair)
+        if key in self.storage:
+            node = self.storage[key]
+            node.value = (key, value)
+            self.order.move_to_end(node)
+            return
+
+        if self.size == self.limit:
+            del self.storage[self.order.head.value[0]]
+            self.order.remove_from_head()
+            self.size -= 1
+        
+        self.order.add_to_tail((key, value))
+        self.storage[key] = self.order.tail
+        self.size += 1
